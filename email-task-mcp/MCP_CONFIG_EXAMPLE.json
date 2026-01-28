@@ -1,0 +1,19 @@
+{
+  "mcpServers": {
+    "email-task-agent": {
+      "command": "node",
+      "args": [
+        "c:/Users/YourUsername/OneDrive - Microsoft/Desktop/Tinkering/email-task-mcp/dist/mcp-server.js"
+      ],
+      "env": {
+        "DATABASE_URL": "file:c:/Users/YourUsername/email-task-app/backend/dev.db",
+        "ANTHROPIC_API_KEY": "sk-ant-your-api-key-here",
+        "MICROSOFT_CLIENT_ID": "your-microsoft-client-id",
+        "MICROSOFT_CLIENT_SECRET": "your-microsoft-client-secret",
+        "BACKEND_URL": "http://localhost:8025",
+        "LOG_FILE": "c:/Users/YourUsername/OneDrive - Microsoft/Desktop/Tinkering/email-task-mcp/mcp.log",
+        "ENABLE_SCHEDULER": "false"
+      }
+    }
+  }
+}
