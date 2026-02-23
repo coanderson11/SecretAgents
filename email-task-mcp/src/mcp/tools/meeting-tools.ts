@@ -23,7 +23,7 @@ export class ExtractMeetingInfoTool extends BaseTool {
       logger.info(`Extracting meeting info from email: ${emailId}`);
 
       const email = await this.prisma.email.findUnique({
-        where: { outlookId: emailId }
+        where: { id: emailId }
       });
 
       if (!email) {
@@ -31,19 +31,20 @@ export class ExtractMeetingInfoTool extends BaseTool {
       }
 
       const meetingService = new MeetingService();
-      const meeting = await meetingService.extractMeetingInfo(email);
+      const meetings = await meetingService.extractMeetingsFromEmail(email.subject, email.body, email.from);
 
       return {
         success: true,
-        meeting: {
-          id: meeting.id,
-          title: meeting.title,
-          startTime: meeting.startTime,
-          endTime: meeting.endTime,
-          location: meeting.location,
-          attendees: meeting.attendees,
-          agenda: meeting.agenda
-        }
+        count: meetings.length,
+        meetings: meetings.map(m => ({
+          title: m.title,
+          description: m.description,
+          startTime: m.startTime,
+          endTime: m.endTime,
+          location: m.location,
+          attendees: m.attendees,
+          category: m.category
+        }))
       };
     } catch (error) {
       this.handleError(error, 'Failed to extract meeting info');
@@ -99,11 +100,12 @@ export class ListMeetingsTool extends BaseTool {
         meetings: meetings.map(m => ({
           id: m.id,
           title: m.title,
+          description: m.description,
           startTime: m.startTime,
           endTime: m.endTime,
           location: m.location,
           attendees: m.attendees,
-          agenda: m.agenda
+          category: m.category
         }))
       };
     } catch (error) {
@@ -147,7 +149,7 @@ export class PrepareMeetingContextTool extends BaseTool {
       const accessToken = await this.userContext.getAccessToken();
       const contextService = new ContextService(accessToken);
 
-      const topics = meeting.agenda ? [meeting.agenda] : [meeting.title];
+      const topics = meeting.description ? meeting.description : meeting.title;
       const context = await contextService.gatherContext(topics);
 
       const meetingPrep = await this.prisma.meetingPrep.findUnique({
@@ -157,21 +159,24 @@ export class PrepareMeetingContextTool extends BaseTool {
       return {
         meeting: {
           title: meeting.title,
+          description: meeting.description,
           startTime: meeting.startTime,
           endTime: meeting.endTime,
           location: meeting.location,
           attendees: meeting.attendees,
-          agenda: meeting.agenda
+          category: meeting.category
         },
         context: {
-          relevantEmails: context.emails?.length || 0,
-          relevantDocuments: context.documents?.length || 0,
-          teamsChatMessages: context.chatMessages?.length || 0
+          totalSources: context.totalSources,
+          sources: context.sources?.slice(0, 5).map(s => ({
+            type: s.type,
+            title: s.title,
+            relevance: s.relevance
+          }))
         },
         preparation: meetingPrep ? {
-          summary: meetingPrep.summary,
-          keyPoints: meetingPrep.keyPoints,
-          suggestedTopics: meetingPrep.suggestedTopics,
+          prepDocument: meetingPrep.prepDocument,
+          contextSources: meetingPrep.contextSources,
           generatedAt: meetingPrep.createdAt
         } : null
       };

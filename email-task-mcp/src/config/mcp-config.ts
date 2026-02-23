@@ -1,4 +1,5 @@
 import { logger } from '../utils/logger.js';
+import { config } from 'dotenv';
 
 export interface MCPConfig {
   databaseUrl: string;
@@ -13,6 +14,9 @@ class ConfigManager {
 
   load(): MCPConfig {
     if (this.config) return this.config;
+
+    // Load .env file
+    config();
 
     try {
       const databaseUrl = process.env.DATABASE_URL;

@@ -33,7 +33,7 @@ export class GenerateDraftTool extends BaseTool {
       logger.info(`Generating draft for email: ${emailId}`);
 
       const email = await this.prisma.email.findUnique({
-        where: { outlookId: emailId }
+        where: { id: emailId }
       });
 
       if (!email) {
@@ -41,16 +41,14 @@ export class GenerateDraftTool extends BaseTool {
       }
 
       const draftService = new DraftService();
-      const draft = await draftService.generateDraft(email, instructions, tone);
+      const draft = await draftService.generateDraftResponse(email.subject, email.body, email.from, instructions);
 
       return {
         success: true,
         draft: {
-          id: draft.id,
           subject: draft.subject,
           body: draft.body,
-          recipientTo: draft.recipientTo,
-          status: draft.status
+          recipientTo: draft.recipientTo
         }
       };
     } catch (error) {

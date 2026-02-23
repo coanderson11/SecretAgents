@@ -22,7 +22,7 @@ export class ExtractTasksTool extends BaseTool {
       logger.info(`Extracting tasks from email: ${emailId}`);
 
       const email = await this.prisma.email.findUnique({
-        where: { outlookId: emailId }
+        where: { id: emailId }
       });
 
       if (!email) {
@@ -30,7 +30,7 @@ export class ExtractTasksTool extends BaseTool {
       }
 
       const claudeService = new ClaudeService();
-      const tasks = await claudeService.extractTasks(email);
+      const tasks = await claudeService.extractTasksFromEmail(email.subject, email.body, email.from);
 
       logger.info(`Extracted ${tasks.length} tasks`);
 
@@ -39,7 +39,6 @@ export class ExtractTasksTool extends BaseTool {
         emailSubject: email.subject,
         tasksExtracted: tasks.length,
         tasks: tasks.map(t => ({
-          id: t.id,
           title: t.title,
           description: t.description,
           priority: t.priority,
@@ -87,7 +86,7 @@ export class ListTasksTool extends BaseTool {
       logger.info(`Listing tasks with filters: status=${status}, category=${category}, priority=${priority}`);
 
       const where: any = {
-        userId: this.userContext.getUserId()
+        sessionId: this.userContext.getSessionId()
       };
 
       if (status) where.status = status;
@@ -230,24 +229,14 @@ export class GetTaskStatsTool extends BaseTool {
     try {
       logger.info('Getting task statistics');
 
-      const userId = this.userContext.getUserId();
+      const sessionId = this.userContext.getSessionId();
 
-      const [total, pending, inProgress, completed, byPriority] = await Promise.all([
-        this.prisma.task.count({ where: { userId } }),
-        this.prisma.task.count({ where: { userId, status: 'PENDING' } }),
-        this.prisma.task.count({ where: { userId, status: 'IN_PROGRESS' } }),
-        this.prisma.task.count({ where: { userId, status: 'COMPLETED' } }),
-        this.prisma.task.groupBy({
-          by: ['priority'],
-          where: { userId, status: { not: 'COMPLETED' } },
-          _count: true
-        })
+      const [total, pending, inProgress, completed] = await Promise.all([
+        this.prisma.task.count({ where: { sessionId } }),
+        this.prisma.task.count({ where: { sessionId, status: 'PENDING' } }),
+        this.prisma.task.count({ where: { sessionId, status: 'IN_PROGRESS' } }),
+        this.prisma.task.count({ where: { sessionId, status: 'COMPLETED' } })
       ]);
-
-      const priorityStats = byPriority.reduce((acc, item) => {
-        acc[item.priority] = item._count;
-        return acc;
-      }, {} as Record<string, number>);
 
       return {
         total,
@@ -255,9 +244,6 @@ export class GetTaskStatsTool extends BaseTool {
           pending,
           inProgress,
           completed
-        },
-        activeTasks: {
-          byPriority: priorityStats
         }
       };
     } catch (error) {

@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SecretAgents Testing Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1>🔐 SecretAgents Testing Dashboard</h1>
+                <p class="subtitle">Safe Real Inbox Testing - All emails are DRAFTS and will NOT be sent</p>
+            </div>
+            <div class="safety-badge">
+                <span class="badge-icon">🔒</span>
+                <span class="badge-text">Safe Mode</span>
+            </div>
+        </header>
+
+        <!-- Stats Summary -->
+        <section class="stats-section">
+            <div class="stat-card">
+                <div class="stat-icon">📧</div>
+                <div class="stat-content">
+                    <div class="stat-label">Emails Fetched</div>
+                    <div class="stat-value" id="stat-emails">0</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">✅</div>
+                <div class="stat-content">
+                    <div class="stat-label">Tasks Extracted</div>
+                    <div class="stat-value" id="stat-tasks">0</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">📝</div>
+                <div class="stat-content">
+                    <div class="stat-label">Drafts Generated</div>
+                    <div class="stat-value" id="stat-drafts">0</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">📋</div>
+                <div class="stat-content">
+                    <div class="stat-label">Actions Logged</div>
+                    <div class="stat-value" id="stat-logs">0</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Sidebar Navigation -->
+            <nav class="sidebar">
+                <button class="nav-btn active" data-tab="emails">
+                    <span class="nav-icon">📧</span>
+                    <span class="nav-label">Emails</span>
+                </button>
+                <button class="nav-btn" data-tab="tasks">
+                    <span class="nav-icon">✅</span>
+                    <span class="nav-label">Tasks</span>
+                </button>
+                <button class="nav-btn" data-tab="drafts">
+                    <span class="nav-icon">📝</span>
+                    <span class="nav-label">Drafts</span>
+                </button>
+                <button class="nav-btn" data-tab="audit-log">
+                    <span class="nav-icon">📋</span>
+                    <span class="nav-label">Audit Log</span>
+                </button>
+                <button class="nav-btn refresh-btn" id="refresh-btn">
+                    <span class="nav-icon">🔄</span>
+                    <span class="nav-label">Refresh</span>
+                </button>
+            </nav>
+
+            <!-- Content Area -->
+            <div class="content-area">
+                <!-- Emails Tab -->
+                <section class="tab-content active" id="tab-emails">
+                    <div class="tab-header">
+                        <h2>📧 Fetched Emails</h2>
+                        <p class="tab-subtitle">Click an email to view full details and extracted tasks</p>
+                    </div>
+                    <div id="emails-container" class="emails-list">
+                        <div class="loading">Loading emails...</div>
+                    </div>
+                </section>
+
+                <!-- Tasks Tab -->
+                <section class="tab-content" id="tab-tasks">
+                    <div class="tab-header">
+                        <h2>✅ Extracted Tasks</h2>
+                        <p class="tab-subtitle">AI-extracted actionable tasks from your emails</p>
+                    </div>
+                    <div id="tasks-container" class="tasks-list">
+                        <div class="loading">Loading tasks...</div>
+                    </div>
+                </section>
+
+                <!-- Drafts Tab -->
+                <section class="tab-content" id="tab-drafts">
+                    <div class="tab-header">
+                        <h2>📝 Generated Drafts</h2>
+                        <p class="tab-subtitle">All drafts are in PENDING status - they will NOT be sent</p>
+                    </div>
+                    <div id="drafts-container" class="drafts-list">
+                        <div class="loading">Loading drafts...</div>
+                    </div>
+                </section>
+
+                <!-- Audit Log Tab -->
+                <section class="tab-content" id="tab-audit-log">
+                    <div class="tab-header">
+                        <h2>📋 Audit Log</h2>
+                        <p class="tab-subtitle">Real-time log of all operations</p>
+                    </div>
+                    <div id="audit-log-container" class="audit-log-list">
+                        <div class="loading">Loading audit log...</div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Email Details -->
+    <div id="email-modal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close">&times;</span>
+            <div id="modal-body"></div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

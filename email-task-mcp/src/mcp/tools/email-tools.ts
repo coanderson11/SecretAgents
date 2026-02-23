@@ -26,36 +26,26 @@ export class FetchEmailsTool extends BaseTool {
       const { maxResults = 10, unreadOnly = false } = params;
       logger.info(`Fetching emails: max=${maxResults}, unreadOnly=${unreadOnly}`);
 
-      const accessToken = await this.userContext.getAccessToken();
-      const outlookService = new OutlookService(accessToken);
+      const sessionId = this.userContext.getSessionId();
+      const emails = await this.prisma.email.findMany({
+        where: { sessionId },
+        take: maxResults,
+        orderBy: { createdAt: 'desc' },
+        include: { tasks: true, drafts: true }
+      });
 
-      const emails = await outlookService.fetchEmails(maxResults);
-
-      const filteredEmails = unreadOnly 
-        ? emails.filter((e: any) => !e.processed) 
-        : emails;
-
-      for (const email of filteredEmails) {
-        await this.prisma.email.upsert({
-          where: { outlookId: (email as any).outlookId },
-          update: email,
-          create: {
-            ...email,
-            userId: this.userContext.getUserId()
-          }
-        });
-      }
-
-      logger.info(`Fetched ${filteredEmails.length} emails`);
+      logger.info(`Fetched ${emails.length} emails`);
 
       return {
-        count: filteredEmails.length,
-        emails: filteredEmails.map((e: any) => ({
-          id: (e as any).outlookId,
+        count: emails.length,
+        emails: emails.map((e: any) => ({
+          id: e.id,
           subject: e.subject,
           from: e.from,
-          receivedAt: e.receivedAt,
-          preview: e.body.substring(0, 150)
+          createdAt: e.createdAt,
+          preview: e.body.substring(0, 150),
+          taskCount: e.tasks.length,
+          draftCount: e.drafts.length
         }))
       };
     } catch (error) {
@@ -83,30 +73,24 @@ export class GetEmailDetailsTool extends BaseTool {
       const { emailId } = params;
       logger.info(`Getting email details: ${emailId}`);
 
-      let email = await this.prisma.email.findUnique({
-        where: { outlookId: emailId }
+      const email = await this.prisma.email.findUnique({
+        where: { id: emailId },
+        include: { tasks: true, drafts: true, meetings: true }
       });
 
       if (!email) {
-        const accessToken = await this.userContext.getAccessToken();
-        const outlookService = new OutlookService(accessToken);
-        const emailData = await outlookService.getEmailById(emailId);
-
-        email = await this.prisma.email.create({
-          data: {
-            ...emailData,
-            userId: this.userContext.getUserId()
-          }
-        });
+        throw new Error(`Email ${emailId} not found`);
       }
 
       return {
-        id: email.outlookId,
+        id: email.id,
         subject: email.subject,
         from: email.from,
         body: email.body,
-        receivedAt: email.receivedAt,
-        processed: email.processed
+        createdAt: email.createdAt,
+        tasks: email.tasks.length,
+        drafts: email.drafts.length,
+        meetings: email.meetings.length
       };
     } catch (error) {
       this.handleError(error, 'Failed to get email details');
@@ -141,8 +125,9 @@ export class SearchEmailsTool extends BaseTool {
       const { query, from, limit = 20 } = params;
       logger.info(`Searching emails: query="${query}", from="${from}"`);
 
+      const sessionId = this.userContext.getSessionId();
       const where: any = {
-        userId: this.userContext.getUserId()
+        sessionId
       };
 
       if (query) {
@@ -159,16 +144,16 @@ export class SearchEmailsTool extends BaseTool {
       const emails = await this.prisma.email.findMany({
         where,
         take: limit,
-        orderBy: { receivedAt: 'desc' }
+        orderBy: { createdAt: 'desc' }
       });
 
       return {
         count: emails.length,
         emails: emails.map((e: any) => ({
-          id: (e as any).outlookId,
+          id: e.id,
           subject: e.subject,
           from: e.from,
-          receivedAt: e.receivedAt,
+          createdAt: e.createdAt,
           preview: e.body.substring(0, 150)
         }))
       };

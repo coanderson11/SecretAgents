@@ -40,32 +40,22 @@ export class ResearchContextTool extends BaseTool {
       const accessToken = await this.userContext.getAccessToken();
       const contextService = new ContextService(accessToken);
 
-      const context = await contextService.gatherContext([topic]);
+      const context = await contextService.gatherContext(topic);
 
       const maxResults = depth === 'quick' ? 5 : depth === 'standard' ? 10 : 20;
 
       return {
         topic,
-        sources: sources,
-        results: {
-          emails: context.emails?.slice(0, maxResults).map(e => ({
-            subject: e.subject,
-            from: e.from,
-            date: e.receivedDateTime,
-            relevance: e.importance
-          })) || [],
-          teamsMessages: context.chatMessages?.slice(0, maxResults).map(m => ({
-            content: m.body?.content?.substring(0, 200),
-            from: m.from?.user?.displayName,
-            date: m.createdDateTime
-          })) || [],
-          documents: context.documents?.slice(0, maxResults).map(d => ({
-            name: d.name,
-            path: d.webUrl,
-            lastModified: d.lastModifiedDateTime
-          })) || []
-        },
-        summary: `Found ${context.emails?.length || 0} emails, ${context.chatMessages?.length || 0} Teams messages, and ${context.documents?.length || 0} documents related to "${topic}"`
+        sources: context.sources?.slice(0, maxResults).map(s => ({
+          type: s.type,
+          title: s.title,
+          content: s.content?.substring(0, 200),
+          url: s.url,
+          date: s.date,
+          author: s.author,
+          relevance: s.relevance
+        })) || [],
+        summary: context.summary
       };
     } catch (error) {
       this.handleError(error, 'Failed to research context');
@@ -103,7 +93,7 @@ export class GenerateContextAwareDraftTool extends BaseTool {
       logger.info(`Generating context-aware draft for email: ${emailId}`);
 
       const email = await this.prisma.email.findUnique({
-        where: { outlookId: emailId }
+        where: { id: emailId }
       });
 
       if (!email) {
@@ -115,20 +105,20 @@ export class GenerateContextAwareDraftTool extends BaseTool {
       let contextSummary = '';
       if (researchTopics.length > 0) {
         const contextService = new ContextService(accessToken);
-        const context = await contextService.gatherContext(researchTopics);
-        contextSummary = `Context: Found ${context.emails?.length || 0} related emails, ${context.chatMessages?.length || 0} Teams messages.`;
+        const topics = researchTopics.join(' ');
+        const context = await contextService.gatherContext(topics);
+        contextSummary = `Context: Found ${context.totalSources} relevant sources.`;
       }
 
       const draftService = new DraftService();
       const instructions = contextSummary 
         ? `Use this context in your response: ${contextSummary}` 
         : undefined;
-      const draft = await draftService.generateDraft(email, instructions, tone);
+      const draft = await draftService.generateDraftResponse(email.subject, email.body, email.from, instructions);
 
       return {
         success: true,
         draft: {
-          id: draft.id,
           subject: draft.subject,
           body: draft.body,
           recipientTo: draft.recipientTo

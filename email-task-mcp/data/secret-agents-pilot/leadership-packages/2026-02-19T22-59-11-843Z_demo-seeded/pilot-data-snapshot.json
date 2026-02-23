@@ -1,0 +1,25 @@
+{
+  "metadata": {
+    "pilotName": "Secret Agents Co-Sell Pilot",
+    "region": "US Enterprise",
+    "updatedAt": "2026-02-19T22:59:11.879Z"
+  },
+  "solutions": [
+    {
+      "solutionId": "sol_finance",
+      "name": "Finance Copilot Agent"
+    }
+  ],
+  "sellers": [
+    {
+      "sellerEmail": "seller@company.com",
+      "status": "active"
+    }
+  ],
+  "promotions": [
+    {
+      "accountName": "Fabrikam",
+      "outcome": "poc"
+    }
+  ]
+}
